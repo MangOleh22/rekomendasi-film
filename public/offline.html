@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sedang Offline - Rekomendasi Film</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center p-4">
+    <div class="card max-w-md w-full text-center p-8 space-y-4">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-800 text-zinc-400 mx-auto">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+                <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                <line x1="12" y1="20" x2="12.01" y2="20"></line>
+            </svg>
+        </div>
+        <h1 class="text-xl font-bold tracking-tight">Koneksi Internet Terputus</h1>
+        <p class="text-sm text-zinc-400">Anda sedang berada dalam mode offline. Silakan periksa jaringan internet Anda dan coba lagi.</p>
+        <div>
+            <button onclick="window.location.reload()" class="btn btn-primary w-full">Coba Lagi</button>
+        </div>
+    </div>
+</body>
+</html>
