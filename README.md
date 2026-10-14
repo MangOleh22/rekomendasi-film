@@ -10,7 +10,7 @@ Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan 
 
 ## 1. Spesifikasi Teknis
 
-- **Framework**: Laravel 11.57.0 (PHP 8.3.22)
+- **Framework**: Laravel 11.57.0 (Mendukung PHP 8.2 s.d. 8.4+)
 - **Basis Data**: MySQL 8.0.30 / MariaDB
 - **Autentikasi**: Laravel Sanctum & Web Session (Username)
 - **Antarmuka**: Blade Templates, Vanilla CSS (gaya shadcn/ui netral gelap)
@@ -23,7 +23,7 @@ Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan 
 ## 2. Panduan Instalasi & Menjalankan Aplikasi
 
 ### Persyaratan:
-- PHP >= 8.2 (PHP 8.3 terpasang)
+- PHP >= 8.2 (Mendukung penuh PHP 8.2, 8.3, dan 8.4+)
 - Composer >= 2.x
 - MySQL Server (Port 3306)
 

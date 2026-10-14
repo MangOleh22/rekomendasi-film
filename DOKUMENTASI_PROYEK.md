@@ -9,7 +9,7 @@ Dokumen ini memuat spesifikasi teknis lengkap, pemodelan data (ERD & LRS), diagr
 | Komponen | Spesifikasi / Versi | Detail Teknis |
 |---|---|---|
 | **Versi Rilis Aplikasi** | v1.0.0 (Rilis Awal) | Semantic versioning |
-| **Bahasa Pemrograman** | PHP 8.3.22 | Strict typing, match expression, readonly classes |
+| **Bahasa Pemrograman** | PHP >= 8.2 s.d. 8.4+ | Teruji di PHP 8.3 bawaan Laragon, kompatibel PHP 8.2 dan 8.4+ |
 | **Framework Web** | Laravel 11.57.0 | Pola MVC, Service Layer, Form Request, Sanctum |
 | **Basis Data** | MySQL 8.0.30 / MariaDB | Relasi cascadeOnDelete, indeks majemuk usia & rating |
 | **Autentikasi** | Session Web & Sanctum Token | Kredensial berbasis `username` unik dan password ter-hash |
