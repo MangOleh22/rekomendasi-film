@@ -4,7 +4,7 @@ Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan 
 
 > **Dokumentasi Lengkap Perancangan Sistem:**  
 > Seluruh diagram pemodelan arsitektur (Versi, ERD, LRS, Flowchart, Use Case, Activity Diagram) telah dipisahkan ke dalam berkas:  
-> 📄 **[DOKUMENTASI_PROYEK.md](file:///c:/laragon/www/rekomendasi-film/DOKUMENTASI_PROYEK.md)**
+> 📄 **[DOKUMENTASI_PROYEK.md](./DOKUMENTASI_PROYEK.md)**
 
 ---
 
