@@ -8,11 +8,12 @@ Dokumen ini memuat spesifikasi teknis lengkap, pemodelan data (ERD & LRS), diagr
 
 | Komponen | Spesifikasi / Versi | Detail Teknis |
 |---|---|---|
-| **Bahasa Pemrograman** | PHP 8.3.22 | Fitur: strict typing, match expression, readonly classes |
-| **Framework Web** | Laravel 11.57.0 | Pola MVC tipis, Service Layer, Form Request, Sanctum |
+| **Versi Rilis Aplikasi** | v1.0.0 (Rilis Awal) | Semantic versioning |
+| **Bahasa Pemrograman** | PHP 8.3.22 | Strict typing, match expression, readonly classes |
+| **Framework Web** | Laravel 11.57.0 | Pola MVC, Service Layer, Form Request, Sanctum |
 | **Basis Data** | MySQL 8.0.30 / MariaDB | Relasi cascadeOnDelete, indeks majemuk usia & rating |
 | **Autentikasi** | Session Web & Sanctum Token | Kredensial berbasis `username` unik dan password ter-hash |
-| **Desain Antarmuka** | Vanilla CSS (Gaya shadcn/ui) | Tema gelap bernuansa zinc, radius sedang, border halus |
+| **Desain Antarmuka** | Vanilla CSS (Gaya shadcn/ui) | Tema gelap netral zinc, radius sedang, border halus |
 | **JavaScript** | Vanilla JS + jQuery 3.7.1 | Manipulasi DOM, debounce pencarian, interaksi modal |
 | **Ikonografi** | Ikon Vektor SVG (Lucide) | Murni berkas/vektor SVG, tanpa emotikon |
 | **PWA (Progressive Web App)** | Manifest & Service Worker | Cache-first aset statis, pengabaian cache API personal |
@@ -25,16 +26,16 @@ Diagram pemodelan basis data konseptual dan relasi kardinalitas antar entitas:
 
 ```mermaid
 erDiagram
-    USERS ||--o{ USER_FAVORITE_GENRES : "memilih"
-    USERS ||--o{ WATCH_HISTORIES : "menonton"
-    MOVIES ||--o{ WATCH_HISTORIES : "dicatat_dalam"
-    MOVIES ||--o{ GENRE_MOVIE : "memiliki"
-    GENRES ||--o{ GENRE_MOVIE : "dikelompokkan_ke"
-    GENRES ||--o{ USER_FAVORITE_GENRES : "difavoritkan_oleh"
+    USERS ||--o{ USER_FAVORITE_GENRES : chooses
+    USERS ||--o{ WATCH_HISTORIES : watches
+    MOVIES ||--o{ WATCH_HISTORIES : recorded_in
+    MOVIES ||--o{ GENRE_MOVIE : has
+    GENRES ||--o{ GENRE_MOVIE : categorized
+    GENRES ||--o{ USER_FAVORITE_GENRES : favored
 
     USERS {
         bigint id PK
-        string username UK
+        string username
         string name
         string email
         string password
@@ -48,7 +49,7 @@ erDiagram
     MOVIES {
         bigint id PK
         string title
-        string slug UK
+        string slug
         text synopsis
         int year
         decimal rating
@@ -62,7 +63,7 @@ erDiagram
     GENRES {
         bigint id PK
         string name
-        string slug UK
+        string slug
         datetime created_at
         datetime updated_at
     }
@@ -100,48 +101,48 @@ Representasi struktur logis antar tabel relasional beserta atribut kunci primer 
 ```mermaid
 classDiagram
     class USERS {
-        +id : PK
-        username : Unique
-        name : String
-        password : Hash
-        birth_date : Date
-        role : "admin" | "user"
-        minimum_rating : Decimal
+        +bigint id PK
+        +string username
+        +string name
+        +string password
+        +date birth_date
+        +string role
+        +decimal minimum_rating
     }
 
     class GENRES {
-        +id : PK
-        name : String
-        slug : Unique
+        +bigint id PK
+        +string name
+        +string slug
     }
 
     class MOVIES {
-        +id : PK
-        title : String
-        slug : Unique
-        year : Integer
-        rating : Decimal
-        age_limit : TinyInt "0, 13, 17, 21"
-        is_active : Boolean
+        +bigint id PK
+        +string title
+        +string slug
+        +int year
+        +decimal rating
+        +tinyint age_limit
+        +boolean is_active
     }
 
     class GENRE_MOVIE {
-        +id : PK
-        #movie_id : FK
-        #genre_id : FK
+        +bigint id PK
+        #bigint movie_id FK
+        #bigint genre_id FK
     }
 
     class USER_FAVORITE_GENRES {
-        +id : PK
-        #user_id : FK
-        #genre_id : FK
+        +bigint id PK
+        #bigint user_id FK
+        #bigint genre_id FK
     }
 
     class WATCH_HISTORIES {
-        +id : PK
-        #user_id : FK
-        #movie_id : FK
-        watched_at : Timestamp
+        +bigint id PK
+        #bigint user_id FK
+        #bigint movie_id FK
+        +datetime watched_at
     }
 
     USERS "1" --> "0..*" USER_FAVORITE_GENRES : has
@@ -160,20 +161,20 @@ Alur kerja evaluasi dan pembobotan film pada `RecommendationService`:
 
 ```mermaid
 flowchart TD
-    Start(["Permintaan Rekomendasi User"]) --> GetUser["Ambil Usia & Rating Min Pengguna"]
+    Start(["Permintaan Rekomendasi User"]) --> GetUser["Ambil Usia dan Rating Min Pengguna"]
     GetUser --> FilterAge["Penyaringan Ketat: age_limit <= user.age"]
     FilterAge --> FilterRating["Penyaringan: rating >= user.minimum_rating"]
     FilterRating --> FilterActive["Penyaringan: is_active = true"]
     FilterActive --> ExcludeWatched["Keluarkan Film dari Riwayat Tonton (watch_histories)"]
     
-    ExcludeWatched --> CheckColdStart{"Pengguna Memiliki Riwayat Tonton atau Genre Favorit?"}
+    ExcludeWatched --> CheckColdStart{"Pengguna Memiliki Riwayat atau Favorit?"}
     
     CheckColdStart -- "Tidak (Kasus Cold Start)" --> ColdStartSort["Urutkan Kandidat Film Berdasarkan Rating Tertinggi"]
-    ColdStartSort --> TakeLimit["Ambil N Teratas (Limit 20 Film)"]
+    ColdStartSort --> TakeLimit["Ambil 20 Film Teratas"]
     
-    CheckColdStart -- "Ya" --> CalcWeights["Hitung Bobot Genre Tiap g: w(g)<br/>Jika Ada Riwayat: 0.7 * h(g) + 0.3 * f(g)<br/>Jika Tanpa Riwayat: f(g)"]
-    CalcWeights --> CalcScore["Hitung Skor Rekomendasi Film:<br/>Afinitas = Rata-rata w(g) pada film<br/>Jaccard = |Genre Film ∩ Favorit| / |Genre Film ∪ Favorit|<br/>Rating Normalisasi = rating / 10<br/>Skor = 100 * (0.5*Afinitas + 0.3*Jaccard + 0.2*Rating_n)"]
-    CalcScore --> FilterPositive["Saring Skor > 0"]
+    CheckColdStart -- "Ya" --> CalcWeights["Hitung Bobot Genre Tiap g: w(g)"]
+    CalcWeights --> CalcScore["Hitung Skor Rekomendasi Tiap Film"]
+    CalcScore --> FilterPositive["Saring Film dengan Skor > 0"]
     FilterPositive --> SortRank["Urutkan Skor Tertinggi (Pemecah Seri: Rating)"]
     SortRank --> TakeLimit
     
@@ -189,8 +190,8 @@ Interaksi antara Aktor (**Pengguna** dan **Administrator**) terhadap kapabilitas
 ```mermaid
 flowchart LR
     subgraph Aktor
-        U(("Pengguna"))
-        A(("Administrator"))
+        U["Pengguna"]
+        A["Administrator"]
     end
 
     subgraph "Sistem RekomFilm"
@@ -227,53 +228,48 @@ flowchart LR
 ### 6.1 Aktivitas Pengguna: Eksplorasi, Tonton, dan Pembaruan Rekomendasi
 
 ```mermaid
-stateDiagram-v2
-    [*] --> BukaAplikasi
-    BukaAplikasi --> InputKredensial : Belum Login
-    InputKredensial --> ValidasiLogin
-    ValidasiLogin --> Dashboard : Berhasil
-    ValidasiLogin --> InputKredensial : Gagal (Pesan Kesalahan)
+flowchart TD
+    Start(["Mulai"]) --> BukaAplikasi["Buka Halaman Web"]
+    BukaAplikasi --> CekLogin{"Sudah Login?"}
+    CekLogin -- "Belum" --> InputKredensial["Input Username dan Password"]
+    InputKredensial --> SubmitLogin["Kirim Form Login"]
+    SubmitLogin --> ValidasiAuth{"Kredensial Valid?"}
+    ValidasiAuth -- "Tidak" --> MunculError["Tampilkan Pesan Kesalahan"] --> InputKredensial
+    ValidasiAuth -- "Ya" --> MasukDashboard["Masuk Dashboard"]
+    CekLogin -- "Sudah" --> MasukDashboard
+
+    MasukDashboard --> HitungRekomendasi["Sistem Memproses Filter Usia dan Bobot"]
+    HitungRekomendasi --> TampilDaftar["Tampilkan Daftar Rekomendasi"]
     
-    Dashboard --> TampilRekomendasi : Kalkulasi Rekomendasi Sesuai Usia
+    TampilDaftar --> PilihAksi{"Pilih Tindakan"}
+    PilihAksi --> KlikDetail["Buka Modal Detail Film"]
+    PilihAksi --> KlikTonton["Klik Tombol Tonton"]
     
-    state TampilRekomendasi {
-        [*] --> TelusuriFilm
-        TelusuriFilm --> BukaModalDetail : Klik 'Detail'
-        TelusuriFilm --> KlikTonton : Klik 'Tonton'
-    }
+    KlikDetail --> KonfirmasiTonton["Klik Tandai Sudah Ditonton"] --> CatatHistory["Simpan ke Riwayat Tonton"]
+    KlikTonton --> CatatHistory
     
-    BukaModalDetail --> KirimWatchHistory : Klik 'Tandai Sudah Ditonton'
-    KlikTonton --> KirimWatchHistory
-    
-    KirimWatchHistory --> SimpanWatchHistory : POST /api/movies/{id}/watch
-    SimpanWatchHistory --> UpdateRekomendasi : Refresh Rekomendasi Realtime
-    UpdateRekomendasi --> [*]
+    CatatHistory --> RefreshRekomendasi["Refresh Rekomendasi Otomatis"]
+    RefreshRekomendasi --> Selesai(["Selesai"])
 ```
 
 ### 6.2 Aktivitas Administrator: Mengelola Data Film & Batas Usia LSF
 
 ```mermaid
-stateDiagram-v2
-    [*] --> BukaPanelAdmin
-    BukaPanelAdmin --> MasukMenuFilm : Akses /admin/movies
-    MasukMenuFilm --> KlikTambahFilm : Buka Dialog Form
+flowchart TD
+    Start(["Mulai"]) --> LoginAdmin["Login sebagai Administrator"]
+    LoginAdmin --> BukaPanel["Akses Panel Admin /admin"]
+    BukaPanel --> MenuFilm["Pilih Menu Kelola Film"]
+    MenuFilm --> BukaModal["Klik Tambah Film Baru"]
     
-    state FormTambahFilm {
-        [*] --> InputMetadata : Judul, Tahun, Rating, Sinopsis
-        InputMetadata --> PilihKlasifikasiLSF : SU / 13+ / 17+ / 21+
-        PilihKlasifikasiLSF --> PilihMultiGenre : Centang Kategori Genre
-        PilihMultiGenre --> UploadPoster : Unggah Berkas Poster (Opsional)
-    }
+    BukaModal --> InputForm["Isi Judul, Tahun, Rating, Sinopsis"]
+    InputForm --> PilihLSF["Tentukan Klasifikasi Usia LSF (SU, 13+, 17+, 21+)"]
+    PilihLSF --> CentangGenre["Pilih Relasi Multi-Genre"]
+    CentangGenre --> SubmitForm["Kirim Formulir (POST /api/admin/movies)"]
     
-    FormTambahFilm --> SubmitForm : Klik 'Simpan Film'
-    SubmitForm --> ValidasiServer : FormRequest MovieRequest
+    SubmitForm --> ValidasiInput{"Validasi Form Request Berhasil?"}
+    ValidasiInput -- "Tidak" --> MunculValidasiError["Tampilkan Pesan Error Validasi"] --> InputForm
+    ValidasiInput -- "Ya" --> SimpanDB["Simpan Data Film ke Database"]
     
-    state ValidasiServer {
-        [*] --> PeriksaInput
-        PeriksaInput --> SimpanKeDatabase : Lolos Validasi
-        PeriksaInput --> TampilkanError : Gagal (Input Tidak Sah)
-    }
-    
-    SimpanKeDatabase --> UpdateTabelAdmin : Perbarui Tabel Admin Realtime
-    UpdateTabelAdmin --> [*]
+    SimpanDB --> UpdateTabel["Perbarui Tabel Katalog Admin"]
+    UpdateTabel --> Selesai(["Selesai"])
 ```
