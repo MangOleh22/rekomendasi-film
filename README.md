@@ -27,25 +27,37 @@ Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan 
 - Composer >= 2.x
 - MySQL Server (Port 3306)
 
-### Langkah Menjalankan:
+### Opsi 1: Menjalankan Lokal (Laragon / CLI)
 ```bash
-# 1. Masuk ke direktori aplikasi
+# Masuk ke direktori aplikasi
 cd c:\laragon\www\rekomendasi-film
 
-# 2. Pasang dependensi
+# Pasang dependensi & setup database
 composer install --no-security-blocking
-
-# 3. Jalankan migrasi dan isi database (data film & akun awal)
 php artisan migrate:fresh --seed
-
-# 4. Hubungkan symlink storage poster
 php artisan storage:link
 
-# 5. Jalankan server lokal
+# Jalankan server lokal
 php artisan serve --port=8000
 ```
-
 Buka di peramban: `http://127.0.0.1:8000/login`
+
+### Opsi 2: Menjalankan via Docker
+Aplikasi sudah dilengkapi dengan [Dockerfile](./Dockerfile) (PHP 8.3 Apache) dan [docker-compose.yml](./docker-compose.yml):
+```bash
+# Bangun dan jalankan container
+docker compose up -d --build
+
+# Jalankan migrasi & seeder di dalam container
+docker compose exec app php artisan migrate:fresh --seed
+docker compose exec app php artisan storage:link
+```
+Akses di: `http://localhost:8000/login`
+
+### Opsi 3: Hosting Menggunakan Apache (cPanel / VPS / Laragon)
+- **DocumentRoot**: Arahkan ke folder `/public` (misal: `/var/www/html/rekomendasi-film/public`).
+- **Modul `mod_rewrite`**: Wajib aktif (sudah dikonfigurasi otomatis di [public/.htaccess](./public/.htaccess)).
+- **Izin Berkas**: Pastikan folder `storage/` dan `bootstrap/cache/` memiliki izin tulis (writeable, chmod 775).
 
 ---
 
