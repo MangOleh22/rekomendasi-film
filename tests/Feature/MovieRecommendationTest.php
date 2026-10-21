@@ -127,4 +127,64 @@ class MovieRecommendationTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonValidationErrors('birth_date');
     }
+
+    public function test_user_can_purchase_movie_and_generate_receipt()
+    {
+        $user = User::factory()->create([
+            'birth_date' => Carbon::now()->subYears(25)->toDateString(),
+            'role' => 'user',
+        ]);
+
+        $movie = Movie::where('title', 'Inception')->first();
+        $movie->update(['price' => 25000]);
+
+        $token = $user->createToken('test')->plainTextToken;
+        $headers = ['Authorization' => "Bearer {$token}"];
+
+        // 1. Purchase movie
+        $response = $this->withHeaders($headers)->postJson("/api/movies/{$movie->id}/purchase", [
+            'payment_method' => 'QRIS',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('transaction.payment_method', 'QRIS');
+        $response->assertJsonPath('transaction.amount', 25000);
+        $orderNumber = $response->json('transaction.order_number');
+        $this->assertNotEmpty($orderNumber);
+
+        // 2. View receipt
+        $receiptResponse = $this->withHeaders($headers)->getJson("/api/transactions/{$orderNumber}");
+        $receiptResponse->assertStatus(200);
+        $receiptResponse->assertJsonPath('data.order_number', $orderNumber);
+        $this->assertEquals('RP. 25.000', $receiptResponse->json('data.formatted_amount'));
+
+        // 3. User transactions list
+        $listResponse = $this->withHeaders($headers)->getJson('/api/me/transactions');
+        $listResponse->assertStatus(200);
+        $this->assertCount(1, $listResponse->json('data'));
+    }
+
+    public function test_underage_user_cannot_purchase_adult_movie()
+    {
+        $child = User::factory()->create([
+            'birth_date' => Carbon::now()->subYears(10)->toDateString(),
+            'role' => 'user',
+        ]);
+
+        $adultMovie = Movie::where('age_limit', '>=', 18)->first() ?: Movie::create([
+            'title' => 'Dewasa Only',
+            'slug' => 'dewasa-only',
+            'year' => 2024,
+            'rating' => 8.0,
+            'age_limit' => 21,
+            'price' => 30000,
+            'is_active' => true,
+        ]);
+
+        $token = $child->createToken('test')->plainTextToken;
+        $headers = ['Authorization' => "Bearer {$token}"];
+
+        $response = $this->withHeaders($headers)->postJson("/api/movies/{$adultMovie->id}/purchase");
+        $response->assertStatus(403);
+    }
 }

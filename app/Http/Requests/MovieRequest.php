@@ -11,6 +11,16 @@ class MovieRequest extends FormRequest
         return $this->user()?->isAdmin() ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('price')) {
+            $cleaned = preg_replace('/[^0-9]/', '', (string) $this->input('price'));
+            $this->merge([
+                'price' => $cleaned !== '' ? (int) $cleaned : 0,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -18,6 +28,7 @@ class MovieRequest extends FormRequest
             'synopsis' => ['nullable', 'string'],
             'year' => ['required', 'integer', 'min:1900', 'max:2100'],
             'rating' => ['required', 'numeric', 'min:0', 'max:10'],
+            'price' => ['nullable', 'integer', 'min:0'],
             'age_limit' => ['required', 'integer', 'in:0,13,17,21'],
             'poster' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
             'genres' => ['nullable', 'array'],
