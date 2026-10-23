@@ -80,4 +80,24 @@ Jalankan pengujian unit dan fitur menggunakan database in-memory:
 ```bash
 php artisan test
 ```
-Semua filter usia, isolasi hak akses admin, dan logika rekomendasi telah terverifikasi lulus.
+Semua filter usia, modul transaksi & pembayaran, isolasi hak akses admin, dan logika rekomendasi telah terverifikasi lulus (9 tests, 47 assertions).
+
+---
+
+## 5. Catatan Pembaruan Rilis v1.1.0 (Changelog)
+
+- **Penghapusan Badge Umur di Navbar Kanan Atas**: Area profil kanan atas kini bersih hanya menampilkan nama akun.
+- **Modul Pembayaran & Pembelian Film**:
+  - Kolom `price` pada film dengan format nominal Rupiah bertitik: `RP. 10.000`.
+  - Input harga di panel admin dilengkapi pemisah titik otomatis.
+  - Tombol **Beli Film** diletakkan di sebelah **kiri** tombol "Tandai Sudah Ditonton" dengan jarak (`gap: 1rem`).
+- **Algoritma If-Else Kategori Umur**:
+  - Batasan umur diimplementasikan dengan logika *if-else* terpadu: `Di Bawah Umur (< 13)`, `Remaja (13-17)`, dan `Dewasa (>= 18)`.
+- **Struk Bukti Transaksi Resmi**:
+  - Penerbitan struk pembayaran lunas setelah pembelian.
+  - Tombol **Cetak Struk (PDF)** dan **Download Struk (Teks)**.
+  - Halaman **Riwayat Transaksi** (`/transactions`) untuk melihat dan mencetak ulang seluruh riwayat struk.
+- **Kesiapan REST API Mobile (Android & iOS)**: 29 endpoint API JSON murni dengan autentikasi Sanctum Bearer Token.
+
+Untuk arsitektur teknis lengkap (ERD, LRS, Flowchart, dan Use Case terbaru), lihat:  
+📄 **[DOKUMENTASI_PROYEK.md](./DOKUMENTASI_PROYEK.md)**

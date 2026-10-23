@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GenreController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\RecommendationController;
+use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 // Auth publik
@@ -29,8 +30,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/movies', [MovieController::class, 'index']);
     Route::get('/movies/search', [MovieController::class, 'search']);
     Route::get('/movies/{id}', [MovieController::class, 'show']);
+    Route::post('/movies/{id}/purchase', [MovieController::class, 'purchase']);
     Route::post('/movies/{id}/watch', [MovieController::class, 'watch']);
     Route::get('/me/watch-history', [MovieController::class, 'watchHistory']);
+
+    // Transaksi & Bukti Pembayaran (Struk)
+    Route::get('/me/transactions', [TransactionController::class, 'index']);
+    Route::get('/transactions/{identifier}', [TransactionController::class, 'show']);
 
     // Rekomendasi
     Route::get('/recommendations', [RecommendationController::class, 'index']);

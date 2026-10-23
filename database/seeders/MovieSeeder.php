@@ -183,12 +183,16 @@ class MovieSeeder extends Seeder
             ],
         ];
 
+        $samplePrices = [10000, 15000, 20000, 25000, 30000, 45000];
+        $priceIndex = 0;
+
         foreach ($movies as $data) {
             $movie = Movie::create([
                 'title' => $data['title'],
                 'slug' => Str::slug($data['title']),
                 'year' => $data['year'],
                 'rating' => $data['rating'],
+                'price' => $data['price'] ?? $samplePrices[$priceIndex++ % count($samplePrices)],
                 'age_limit' => $data['age_limit'],
                 'synopsis' => $data['synopsis'],
                 'is_active' => true,

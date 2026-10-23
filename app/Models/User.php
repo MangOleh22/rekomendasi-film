@@ -39,11 +39,30 @@ class User extends Authenticatable
         ];
     }
 
-    protected $appends = ['age'];
+    protected $appends = ['age', 'age_category'];
 
     public function getAgeAttribute(): int
     {
         return $this->birth_date ? Carbon::parse($this->birth_date)->age : 0;
+    }
+
+    /**
+     * Algoritma if-else klasifikasi kategori umur:
+     * - Di bawah umur: < 13 tahun
+     * - Remaja: 13 - 17 tahun
+     * - Dewasa: >= 18 tahun
+     */
+    public function getAgeCategoryAttribute(): string
+    {
+        $age = (int) $this->age;
+
+        if ($age < 13) {
+            return 'Di Bawah Umur';
+        } elseif ($age < 18) {
+            return 'Remaja';
+        } else {
+            return 'Dewasa';
+        }
     }
 
     public function isAdmin(): bool
@@ -64,5 +83,10 @@ class User extends Authenticatable
     public function watchedMovies(): BelongsToMany
     {
         return $this->belongsToMany(Movie::class, 'watch_histories')->withPivot('watched_at');
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
     }
 }

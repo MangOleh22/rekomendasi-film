@@ -37,6 +37,10 @@ Route::middleware('auth')->group(function () {
         return view('user.history');
     })->name('history');
 
+    Route::get('/transactions', function () {
+        return view('user.transactions');
+    })->name('transactions');
+
     Route::get('/preferences', function () {
         return view('user.preferences');
     })->name('preferences');

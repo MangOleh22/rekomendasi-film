@@ -39,13 +39,15 @@
 @section('scripts')
 <script>
 $(document).ready(function() {
+    // Algoritma if-else untuk penentuan badge kategori umur
     function getAgeBadge(ageLimit) {
-        switch(parseInt(ageLimit)) {
-            case 0: return '<span class="badge badge-su">SU</span>';
-            case 13: return '<span class="badge badge-13">13+</span>';
-            case 17: return '<span class="badge badge-17">17+</span>';
-            case 21: return '<span class="badge badge-21">21+</span>';
-            default: return `<span class="badge badge-su">${ageLimit}+</span>`;
+        const age = parseInt(ageLimit) || 0;
+        if (age < 13) {
+            return '<span class="badge badge-su" title="Semua Usia">Di Bawah Umur (SU)</span>';
+        } else if (age < 18) {
+            return '<span class="badge badge-13" title="13+ Remaja">Remaja (13+)</span>';
+        } else {
+            return `<span class="badge badge-17" title="Dewasa">Dewasa (${age >= 21 ? '21+' : '18+'})</span>`;
         }
     }
 

@@ -11,8 +11,9 @@
             <div>
                 <h1 class="text-2xl font-bold" style="margin-bottom: 0.25rem;">Halo, {{ auth()->user()->name }}</h1>
                 <p class="text-sm text-muted">
-                    Sistem mendeteksi usia Anda <strong style="color: var(--foreground);">{{ auth()->user()->age }} tahun</strong>. 
-                    Hanya menampilkan film dengan klasifikasi usia sesuai izin Sensor (LSF: {{ auth()->user()->age < 13 ? 'SU' : (auth()->user()->age < 17 ? 'SU, 13+' : (auth()->user()->age < 21 ? 'SU, 13+, 17+' : 'Semua Termasuk 21+')) }}).
+                    Sistem mendeteksi usia Anda <strong style="color: var(--foreground);">{{ auth()->user()->age }} tahun</strong> 
+                    (Kategori: <strong style="color: #38bdf8;">{{ auth()->user()->age_category }}</strong>). 
+                    Hanya menampilkan film yang sesuai dengan kategori usia Anda.
                 </p>
             </div>
             <div style="display: flex; gap: 0.75rem; align-items: center;">
@@ -106,14 +107,15 @@ $(document).ready(function() {
         }
     });
 
-    // Helper render badge usia LSF
+    // Helper render badge usia menggunakan algoritma if-else
     function getAgeBadge(ageLimit) {
-        switch(parseInt(ageLimit)) {
-            case 0: return '<span class="badge badge-su">SU</span>';
-            case 13: return '<span class="badge badge-13">13+</span>';
-            case 17: return '<span class="badge badge-17">17+</span>';
-            case 21: return '<span class="badge badge-21">21+</span>';
-            default: return `<span class="badge badge-su">${ageLimit}+</span>`;
+        const age = parseInt(ageLimit) || 0;
+        if (age < 13) {
+            return '<span class="badge badge-su" title="Semua Usia">Di Bawah Umur (SU)</span>';
+        } else if (age < 18) {
+            return '<span class="badge badge-13" title="13+ Remaja">Remaja (13+)</span>';
+        } else {
+            return `<span class="badge badge-17" title="Dewasa">Dewasa (${age >= 21 ? '21+' : '18+'})</span>`;
         }
     }
 
@@ -159,7 +161,13 @@ $(document).ready(function() {
                         ${genresHtml}
                     </div>
                     <p class="movie-synopsis">${escapeHtml(movie.synopsis || 'Belum ada sinopsis.')}</p>
-                    <div style="display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.5rem; margin-bottom: 0.6rem; border-top: 1px solid var(--border);">
+                        <span class="text-xs text-muted">Harga:</span>
+                        <span style="font-size: 0.875rem; font-weight: 700; color: #34d399;">
+                            ${movie.formatted_price || 'Gratis'}
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
                         <button class="btn btn-secondary btn-sm view-detail-btn" data-id="${movie.id}" style="flex: 1;">
                             Detail
                         </button>
@@ -339,6 +347,9 @@ $(document).ready(function() {
         });
     });
 
+    let currentMovieToBuy = null;
+    let currentReceiptData = null;
+
     // View Movie Detail in modal
     $(document).on('click', '.view-detail-btn', function() {
         const id = $(this).data('id');
@@ -348,6 +359,28 @@ $(document).ready(function() {
 
             const genresHtml = (m.genres || []).map(g => `<span class="badge badge-genre">${escapeHtml(g.name)}</span>`).join(' ');
             
+            // Logika tombol Beli Film & status kepemilikan
+            let buyButtonHtml = '';
+            if (m.is_purchased && m.transaction) {
+                buyButtonHtml = `
+                    <button type="button" class="btn btn-outline view-receipt-btn" data-order="${m.transaction.order_number}" style="color: #34d399; border-color: rgba(16, 185, 129, 0.4); display: flex; align-items: center; gap: 0.4rem;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
+                        <span>✓ Sudah Dibeli (Lihat Struk)</span>
+                    </button>
+                `;
+            } else if (m.price <= 0) {
+                buyButtonHtml = `
+                    <span class="badge badge-su" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">Film Gratis</span>
+                `;
+            } else {
+                buyButtonHtml = `
+                    <button type="button" class="btn btn-primary open-payment-btn" data-id="${m.id}" data-title="${escapeHtml(m.title)}" data-price="${m.formatted_price}" style="background: #10b981; border-color: #10b981; color: #ffffff; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                        <span>Beli Film (${m.formatted_price})</span>
+                    </button>
+                `;
+            }
+
             const detailHtml = `
                 <div style="display: flex; gap: 1.25rem; flex-direction: column;">
                     <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
@@ -357,6 +390,9 @@ $(document).ready(function() {
                             ${m.rating} / 10
                         </span>
                         <span class="text-sm text-muted">Tahun Rilis: ${m.year}</span>
+                        <span style="margin-left: auto; font-size: 0.95rem; font-weight: 700; color: #34d399; background: rgba(16, 185, 129, 0.1); padding: 0.25rem 0.65rem; border-radius: var(--radius); border: 1px solid rgba(16, 185, 129, 0.25);">
+                            Harga: ${m.formatted_price}
+                        </span>
                     </div>
                     <div>
                         <span class="text-xs font-semibold text-muted" style="text-transform: uppercase;">Genre</span>
@@ -370,8 +406,10 @@ $(document).ready(function() {
                             ${escapeHtml(m.synopsis || 'Tidak ada deskripsi sinopsis untuk film ini.')}
                         </p>
                     </div>
-                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-                        <button class="btn btn-primary watch-movie-btn" data-id="${m.id}">
+                    <!-- Tombol Beli Film di sebelah KIRI tombol Tandai Sudah Ditonton dengan jarak (gap: 1rem) -->
+                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                        ${buyButtonHtml}
+                        <button class="btn btn-outline watch-movie-btn" data-id="${m.id}" style="display: flex; align-items: center; gap: 0.4rem;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                             <span>Tandai Sudah Ditonton</span>
                         </button>
@@ -385,11 +423,133 @@ $(document).ready(function() {
         });
     });
 
-    // Close modal
+    // Close detail modal
     $('#closeModalBtn, #movieDetailDialog').on('click', function(e) {
         if (e.target === this) {
             $('#movieDetailDialog').removeClass('active');
         }
+    });
+
+    // Buka Modal Pembayaran saat tombol "Beli Film" diklik
+    $(document).on('click', '.open-payment-btn', function() {
+        currentMovieToBuy = $(this).data('id');
+        const title = $(this).data('title');
+        const price = $(this).data('price');
+
+        $('#payMovieTitle').text(title);
+        $('#payMoviePrice').text(price);
+        $('#paymentDialog').addClass('active');
+    });
+
+    // Tutup Modal Pembayaran
+    $('#closePaymentModalBtn, #cancelPayBtn, #paymentDialog').on('click', function(e) {
+        if (e.target === this) {
+            $('#paymentDialog').removeClass('active');
+        }
+    });
+
+    // Konfirmasi & Proses Pembayaran
+    $('#confirmPaymentBtn').on('click', function() {
+        if (!currentMovieToBuy) return;
+        const method = $('input[name="payment_method"]:checked').val() || 'QRIS';
+        const $btn = $(this);
+        $btn.prop('disabled', true).text('Memproses...');
+
+        $.ajax({
+            url: `/api/movies/${currentMovieToBuy}/purchase`,
+            type: 'POST',
+            data: JSON.stringify({ payment_method: method }),
+            contentType: 'application/json',
+            success: function(res) {
+                $btn.prop('disabled', false).text('Bayar Sekarang');
+                $('#paymentDialog').removeClass('active');
+                $('#movieDetailDialog').removeClass('active');
+                showToast(res.message);
+
+                // Tampilkan Modal Struk Bukti Transaksi
+                renderAndShowReceipt(res.transaction);
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).text('Bayar Sekarang');
+                showToast(xhr.responseJSON?.message || 'Pembayaran gagal.', 'error');
+            }
+        });
+    });
+
+    // Render & Tampilkan Struk
+    function renderAndShowReceipt(trx) {
+        currentReceiptData = trx;
+        $('#recOrderNumber').text(trx.order_number);
+        $('#recDate').text(trx.formatted_paid_at || new Date().toLocaleString('id-ID'));
+        $('#recUserName').text(trx.user?.name || '{{ auth()->user()->name }}');
+        $('#recUserCategory').text(trx.user?.age_category || '{{ auth()->user()->age_category }}');
+        $('#recPaymentMethod').text(trx.payment_method);
+        $('#recMovieTitle').text(trx.movie?.title || '-');
+        $('#recMoviePrice').text(trx.formatted_amount || 'RP. 0');
+        $('#recMovieMeta').text(`Tahun: ${trx.movie?.year || '-'} | Kategori Usia: ${trx.movie?.age_category || '-'}`);
+        $('#recTotalAmount').text(trx.formatted_amount || 'RP. 0');
+        $('#receiptDialog').addClass('active');
+    }
+
+    // Lihat struk yang sudah dibeli
+    $(document).on('click', '.view-receipt-btn', function() {
+        const orderNumber = $(this).data('order');
+        if (!orderNumber) return;
+        $.get(`/api/transactions/${orderNumber}`, function(res) {
+            renderAndShowReceipt(res.data);
+        }).fail(function() {
+            showToast('Gagal memuat struk transaksi.', 'error');
+        });
+    });
+
+    // Tutup Struk Modal
+    $('#closeReceiptModalBtn, #receiptDialog').on('click', function(e) {
+        if (e.target === this) {
+            $('#receiptDialog').removeClass('active');
+        }
+    });
+
+    // Cetak Struk (PDF / Printer)
+    $('#printReceiptBtn').on('click', function() {
+        window.print();
+    });
+
+    // Download Struk (File Teks)
+    $('#downloadReceiptBtn').on('click', function() {
+        if (!currentReceiptData) return;
+        const trx = currentReceiptData;
+        const text = `================================================
+          REKOMFILM INDONESIA
+     BUKTI TRANSAKSI PEMBELIAN FILM RESMI
+================================================
+STATUS PEMBAYARAN: LUNAS / BERHASIL
+NO. TRANSAKSI    : ${trx.order_number}
+TANGGAL & WAKTU  : ${trx.formatted_paid_at}
+NAMA PEMBELI     : ${trx.user?.name || '{{ auth()->user()->name }}'}
+KATEGORI USIA    : ${trx.user?.age_category || '{{ auth()->user()->age_category }}'}
+METODE BAYAR     : ${trx.payment_method}
+------------------------------------------------
+RINCIAN FILM:
+Judul Film       : ${trx.movie?.title || '-'}
+Tahun Rilis      : ${trx.movie?.year || '-'}
+Kategori Usia    : ${trx.movie?.age_category || '-'}
+Harga Film       : ${trx.formatted_amount}
+------------------------------------------------
+TOTAL PEMBAYARAN : ${trx.formatted_amount}
+================================================
+Terima kasih telah melakukan pembelian di RekomFilm.
+Simpan struk ini sebagai bukti transaksi resmi.
+================================================`;
+
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Struk-${trx.order_number}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 
     // Initial load

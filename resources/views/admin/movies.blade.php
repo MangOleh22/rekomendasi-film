@@ -41,15 +41,16 @@
                     <tr>
                         <th style="width: 50px;">ID</th>
                         <th>Judul & Tahun</th>
-                        <th>Klasifikasi LSF</th>
+                        <th>Kategori Usia</th>
                         <th>Rating</th>
+                        <th>Harga Film</th>
                         <th>Genre</th>
                         <th style="text-align: right;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="adminMoviesTableBody">
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 3rem 1rem; color: var(--muted-foreground);">
+                        <td colspan="7" style="text-align: center; padding: 3rem 1rem; color: var(--muted-foreground);">
                             Memuat data film...
                         </td>
                     </tr>
@@ -83,7 +84,7 @@
                     <input type="text" id="movieTitle" name="title" class="form-input" required>
                 </div>
 
-                <div class="grid-cols-3" style="gap: 0.75rem;">
+                <div class="grid-cols-2" style="gap: 0.75rem;">
                     <div>
                         <label class="form-label" for="movieYear">Tahun Rilis</label>
                         <input type="number" id="movieYear" name="year" class="form-input" min="1900" max="2100" value="{{ date('Y') }}" required>
@@ -92,14 +93,22 @@
                         <label class="form-label" for="movieRating">Rating (0-10)</label>
                         <input type="number" id="movieRating" name="rating" class="form-input" step="0.1" min="0" max="10" value="7.5" required>
                     </div>
+                </div>
+
+                <div class="grid-cols-2" style="gap: 0.75rem;">
                     <div>
                         <label class="form-label" for="movieAgeLimit">Batas Usia (LSF)</label>
                         <select id="movieAgeLimit" name="age_limit" class="form-select" required>
-                            <option value="0">SU (Semua Usia)</option>
-                            <option value="13">13+</option>
-                            <option value="17">17+</option>
-                            <option value="21">21+</option>
+                            <option value="0">Di Bawah Umur - SU (Semua Usia)</option>
+                            <option value="13">Remaja - 13+</option>
+                            <option value="17">Dewasa - 17+</option>
+                            <option value="21">Dewasa - 21+</option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="moviePrice">Harga Film (Rupiah)</label>
+                        <input type="text" id="moviePrice" name="price" class="form-input" placeholder="Contoh: 10.000 atau 25.000" autocomplete="off">
+                        <span class="text-xs text-muted" id="pricePreview">Format: RP. 0</span>
                     </div>
                 </div>
 
@@ -160,13 +169,37 @@ $(document).ready(function() {
         }
     });
 
+    function formatRupiah(angka) {
+        if (!angka) return '';
+        const numberString = angka.toString().replace(/[^0-9]/g, '');
+        const sisa = numberString.length % 3;
+        let rupiah = numberString.substr(0, sisa);
+        const ribuan = numberString.substr(sisa).match(/\d{3}/g);
+
+        if (ribuan) {
+            const separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+        return rupiah;
+    }
+
+    $('#moviePrice').on('input', function() {
+        const formatted = formatRupiah($(this).val());
+        $(this).val(formatted);
+        $('#pricePreview').text(formatted ? 'Format: RP. ' + formatted : 'Format: RP. 0 (Gratis)');
+    });
+
+    /**
+     * Algoritma if-else untuk penentuan badge kategori umur film
+     */
     function getAgeBadge(ageLimit) {
-        switch(parseInt(ageLimit)) {
-            case 0: return '<span class="badge badge-su">SU</span>';
-            case 13: return '<span class="badge badge-13">13+</span>';
-            case 17: return '<span class="badge badge-17">17+</span>';
-            case 21: return '<span class="badge badge-21">21+</span>';
-            default: return `<span class="badge badge-su">${ageLimit}+</span>`;
+        const age = parseInt(ageLimit) || 0;
+        if (age < 13) {
+            return '<span class="badge badge-su" title="Semua Usia">Di Bawah Umur (SU)</span>';
+        } else if (age < 18) {
+            return '<span class="badge badge-13" title="13+ Remaja">Remaja (13+)</span>';
+        } else {
+            return `<span class="badge badge-17" title="Dewasa">Dewasa (${age >= 21 ? '21+' : '18+'})</span>`;
         }
     }
 
@@ -191,7 +224,7 @@ $(document).ready(function() {
             if (list.length === 0) {
                 $('#adminMoviesTableBody').html(`
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--muted-foreground);">
+                        <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--muted-foreground);">
                             Tidak ada data film yang cocok.
                         </td>
                     </tr>
@@ -214,6 +247,11 @@ $(document).ready(function() {
                             <span class="badge-rating">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                                 ${m.rating}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-weight: 700; color: #34d399; font-size: 0.875rem;">
+                                ${m.formatted_price || 'Gratis'}
                             </span>
                         </td>
                         <td><div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">${genres}</div></td>
@@ -252,6 +290,8 @@ $(document).ready(function() {
         $('#movieFormTitle').text('Tambah Film Baru');
         $('#formMovieId').val('');
         $('#movieAdminForm')[0].reset();
+        $('#moviePrice').val('');
+        $('#pricePreview').text('Format: RP. 0 (Gratis)');
         $('.form-genre-chk').prop('checked', false).closest('label').removeClass('active');
         $('#movieFormDialog').addClass('active');
     });
@@ -268,6 +308,10 @@ $(document).ready(function() {
             $('#movieRating').val(m.rating);
             $('#movieAgeLimit').val(m.age_limit);
             $('#movieSynopsis').val(m.synopsis);
+
+            const formattedPrice = formatRupiah(m.price || 0);
+            $('#moviePrice').val(formattedPrice);
+            $('#pricePreview').text(formattedPrice ? 'Format: RP. ' + formattedPrice : 'Format: RP. 0 (Gratis)');
 
             const activeGenreIds = (m.genres || []).map(g => g.id);
             $('.form-genre-chk').each(function() {
