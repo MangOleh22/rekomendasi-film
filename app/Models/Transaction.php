@@ -11,8 +11,12 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    /** Metode pembayaran yang diterima (dipakai beli langsung & checkout keranjang). */
+    public const METHODS = ['QRIS', 'BCA Virtual Account', 'Mandiri Virtual Account'];
+
     protected $fillable = [
         'order_number',
+        'invoice_number',
         'user_id',
         'movie_id',
         'amount',
@@ -46,13 +50,14 @@ class Transaction extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return 'RP. ' . number_format($this->amount, 0, ',', '.');
+        return 'Rp ' . number_format($this->amount, 0, ',', '.');
     }
 
     public function getFormattedPaidAtAttribute(): string
     {
         return $this->paid_at
-            ? Carbon::parse($this->paid_at)->locale('id')->translatedFormat('d M Y, H:i') . ' WIB'
+            // Waktu disimpan sesuai APP_TIMEZONE; tampilkan di zona tampilan (default Asia/Jakarta -> "WIB").
+            ? Carbon::parse($this->paid_at)->setTimezone(config('app.display_timezone'))->locale('id')->translatedFormat('d M Y, H:i T')
             : '-';
     }
 }

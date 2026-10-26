@@ -2,6 +2,8 @@
 
 Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan batas usia resmi Lembaga Sensor Film (LSF: SU, 13+, 17+, 21+), preferensi genre, dan riwayat tontonan pengguna menggunakan algoritma bobot afinitas, kemiripan Jaccard, dan rating.
 
+> **Riwayat perubahan:** lihat [CHANGELOG.md](./CHANGELOG.md) · **Catatan untuk agent/IDE:** [AGENTS.md](./AGENTS.md)
+
 > **Dokumentasi Lengkap Perancangan Sistem:**  
 > Seluruh diagram pemodelan arsitektur (Versi, ERD, LRS, Flowchart, Use Case, Activity Diagram) telah dipisahkan ke dalam berkas:  
 > 📄 **[DOKUMENTASI_PROYEK.md](./DOKUMENTASI_PROYEK.md)**
@@ -13,12 +15,37 @@ Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan 
 - **Framework**: Laravel 11.57.0 (Mendukung PHP 8.2 s.d. 8.4+)
 - **Basis Data**: MySQL 8.0.30 / MariaDB
 - **Autentikasi**: Laravel Sanctum & Web Session (Username)
-- **Antarmuka**: Blade Templates, Vanilla CSS (gaya shadcn/ui netral gelap)
-- **Frontend Script**: Vanilla JS + jQuery 3.7.1
-- **Ikon**: Vektor SVG (tanpa emotikon)
-- **PWA**: Web App Manifest & Service Worker (Offline Support)
+- **Antarmuka**: Blade (1 view) + JavaScript vanilla (ES modules, tanpa framework/jQuery) + Tailwind CSS v4, gaya shadcn/ui
+- **Build**: Vite (`npm run dev` / `npm run build`)
+- **PWA**: `public/manifest.webmanifest` + `public/sw.js` (installable, offline fallback)
+
+### Struktur Frontend
+```
+routes/web.php            daftar URL -> view `app` + nama halaman
+resources/views/app.blade.php   satu-satunya view (memuat <body data-page="...">)
+resources/css/app.css     Tailwind + variabel tema (warna) shadcn
+resources/js/main.js      penjaga akses (login/admin), kerangka navigasi, memuat halaman, daftar service worker
+resources/js/lib/api.js   fetch ke /api + token
+resources/js/lib/ui.js    class gaya shadcn, ikon, toast, dialog, kartu film, tabel, paginasi
+resources/js/pages/*.js   satu file per halaman: home, cart, history, transactions, preferences,
+                          login, register, admin-dashboard/movies/genres/users/transactions
+```
+Menambah halaman: tambah baris di `routes/web.php` + file `resources/js/pages/<nama>.js` (`export default async (root, user) => {...}`).
+Folder `_legacy_frontend/` berisi frontend Blade+jQuery lama (cadangan, aman dihapus).
 
 ---
+
+## 1b. Konfigurasi Fleksibel (`.env`)
+
+| Hal | Pilihan | Cara |
+|---|---|---|
+| **PHP** | 8.2 – 8.5 | Lock disusun untuk baseline 8.2 (`config.platform.php`). PHP 8.0/8.1 tidak didukung (Laravel 11 & Reverb mensyaratkan 8.2+). |
+| **Database** | SQLite, MySQL, MariaDB, PostgreSQL | `DB_CONNECTION=sqlite\|mysql\|mariadb\|pgsql` + `DB_HOST/PORT/DATABASE/USERNAME/PASSWORD`. Pastikan ekstensi `pdo_mysql` / `pdo_pgsql` aktif. |
+| **Cache / Session / Queue** | database (default) atau Redis | `CACHE_STORE`, `SESSION_DRIVER`, `QUEUE_CONNECTION` = `redis`. `REDIS_CLIENT=predis` tidak butuh ekstensi PHP. |
+| **Realtime** | Laravel Reverb | `php artisan reverb:start` (port 8080). Kosongkan `VITE_REVERB_APP_KEY` untuk mematikan. Banyak server: `REVERB_SCALING_ENABLED=true` + Redis. |
+
+Realtime saat ini: admin menambah/mengubah/menghapus film -> semua pengguna di Beranda mendapat toast dan daftar dimuat ulang (`app/Events/MovieChanged.php`, `resources/js/lib/realtime.js`).
+Setelah mengubah `VITE_*` jalankan ulang `npm run build` / `npm run dev`.
 
 ## 2. Panduan Instalasi & Menjalankan Aplikasi
 
@@ -33,17 +60,19 @@ Sistem rekomendasi film berbasis **Laravel 11** yang menyaring film berdasarkan 
 cd c:\laragon\www\rekomendasi-film
 
 # Pasang dependensi & setup database
-composer install --no-security-blocking
+composer install
+npm install && npm run build   # build frontend (atau `npm run dev` saat pengembangan)
 php artisan migrate:fresh --seed
 php artisan storage:link
 
 # Jalankan server lokal
 php artisan serve --port=8000
+php artisan reverb:start        # terminal lain (opsional, untuk realtime)
 ```
 Buka di peramban: `http://127.0.0.1:8000/login`
 
 ### Opsi 2: Menjalankan via Docker
-Aplikasi sudah dilengkapi dengan [Dockerfile](./Dockerfile) (PHP 8.3 Apache) dan [docker-compose.yml](./docker-compose.yml):
+Aplikasi sudah dilengkapi dengan [Dockerfile](./Dockerfile) (versi PHP bisa dipilih lewat `PHP_VERSION`, 8.2–8.5) dan [docker-compose.yml](./docker-compose.yml). Database & Redis dipilih lewat profile (`--profile mysql|mariadb|postgres|redis`); set `DB_CONNECTION`/`DB_HOST` di `.env` sesuai pilihan:
 ```bash
 # Bangun dan jalankan container
 docker compose up -d --build

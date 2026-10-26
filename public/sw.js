@@ -1,92 +1,41 @@
-const CACHE_NAME = 'rekomfilm-static-v1';
-const STATIC_ASSETS = [
-    '/',
-    '/css/app.css',
-    '/js/jquery.min.js',
-    '/js/app.js',
-    '/offline.html',
-    '/manifest.webmanifest',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
-];
+// Service worker RekomFilm. Strategi:
+//  - /api/*            : tidak pernah di-cache (data selalu segar, aman untuk token)
+//  - /build/* (aset)   : cache-first (nama file ber-hash, aman di-cache lama)
+//  - navigasi halaman  : network-first, jatuh ke shell SPA ter-cache lalu offline.html
+// Naikkan VERSION untuk membersihkan cache lama.
+const VERSION = 'v3';
+const CACHE = `rekomfilm-${VERSION}`;
+const PRECACHE = ['/offline.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
-// Install: Simpan aset statis dasar
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(STATIC_ASSETS);
-        }).then(() => self.skipWaiting())
-    );
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
 });
 
-// Activate: Bersihkan cache versi lama
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) => {
-            return Promise.all(
-                keys.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
-            );
-        }).then(() => self.clients.claim())
-    );
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
 });
 
-// Fetch: Tangani strategi cache
-self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+self.addEventListener('fetch', (e) => {
+  const { request } = e;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api')) return;
 
-    // KETENTUAN PENTING: API personal (profil, rekomendasi, riwayat, watch, auth) TIDAK BOLEH di-cache
-    if (url.pathname.startsWith('/api/')) {
-        event.respondWith(fetch(event.request));
-        return;
-    }
+  const save = (res) => {
+    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(request, copy)); }
+    return res;
+  };
 
-    // Navigasi HTML: Network First, fallback ke cache atau offline.html
-    if (event.request.mode === 'navigate') {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    return response;
-                })
-                .catch(() => {
-                    return caches.match('/offline.html');
-                })
-        );
-        return;
-    }
-
-    // Aset statis: Cache First / Stale While Revalidate
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                // Fetch in background to update cache
-                fetch(event.request).then((networkResponse) => {
-                    if (networkResponse && networkResponse.status === 200) {
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, networkResponse);
-                        });
-                    }
-                }).catch(() => {});
-                return cachedResponse;
-            }
-
-            return fetch(event.request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                    return networkResponse;
-                }
-
-                // Jangan cache response non-GET
-                if (event.request.method === 'GET' && !url.pathname.startsWith('/storage/posters/')) {
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseToCache);
-                    });
-                }
-                return networkResponse;
-            });
-        })
+  if (request.mode === 'navigate') {
+    e.respondWith(
+      fetch(request).then(save).catch(() => caches.match(request).then((r) => r || caches.match('/offline.html'))),
     );
+    return;
+  }
+
+  // Aset statis & poster: cache-first
+  e.respondWith(caches.match(request).then((hit) => hit || fetch(request).then(save)));
 });

@@ -21,7 +21,7 @@ class TransactionController extends Controller
         }])
             ->where('user_id', $user->id)
             ->orderBy('id', 'desc')
-            ->paginate($request->input('per_page', 15));
+            ->paginate($this->perPage($request, 15));
 
         return response()->json($transactions);
     }

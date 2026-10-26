@@ -30,7 +30,7 @@ class MovieRequest extends FormRequest
             'rating' => ['required', 'numeric', 'min:0', 'max:10'],
             'price' => ['nullable', 'integer', 'min:0'],
             'age_limit' => ['required', 'integer', 'in:0,13,17,21'],
-            'poster' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
+            'poster' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,gif,avif,svg'], // tanpa batas ukuran aplikasi; batas server = upload_max_filesize/post_max_size (php.ini)
             'genres' => ['nullable', 'array'],
             'genres.*' => ['integer', 'exists:genres,id'],
             'is_active' => ['nullable', 'boolean'],

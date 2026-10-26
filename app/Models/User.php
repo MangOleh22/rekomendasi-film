@@ -21,6 +21,7 @@ class User extends Authenticatable
         'password',
         'birth_date',
         'role',
+        'is_active',
         'minimum_rating',
     ];
 
@@ -35,6 +36,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'is_active' => 'boolean',
             'minimum_rating' => 'float',
         ];
     }

@@ -1,37 +1,51 @@
+# Aplikasi + Reverb selalu jalan. Pilih database dan Redis lewat profile:
+#   docker compose --profile mysql    --profile redis up -d --build
+#   docker compose --profile mariadb  ...
+#   docker compose --profile postgres ...
+# Sesuaikan DB_CONNECTION/DB_HOST di .env (mysql|mariadb -> host mysql/mariadb, pgsql -> host postgres).
+x-app: &app
+  build:
+    context: .
+    args:
+      PHP_VERSION: ${PHP_VERSION:-8.3}
+  env_file: .env
+  volumes:
+    - .:/var/www/html
+  restart: unless-stopped
+
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: rekomfilm_app
-    restart: unless-stopped
-    ports:
-      - "8000:80"
-    volumes:
-      - .:/var/www/html
-    environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      DB_CONNECTION: mysql
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_DATABASE: rekomendasi_film
-      DB_USERNAME: root
-      DB_PASSWORD: rootpassword
-    depends_on:
-      - db
+    <<: *app
+    ports: ["8000:8000"]
 
-  db:
-    image: mysql:8.0
-    container_name: rekomfilm_db
-    restart: unless-stopped
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: rekomendasi_film
-    volumes:
-      - db_data:/var/lib/mysql
+  reverb:
+    <<: *app
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    ports: ["8080:8080"]
+
+  mysql:
+    profiles: [mysql]
+    image: mysql:8.4
+    environment: { MYSQL_ROOT_PASSWORD: secret, MYSQL_DATABASE: rekomendasi_film }
+    volumes: [mysql_data:/var/lib/mysql]
+
+  mariadb:
+    profiles: [mariadb]
+    image: mariadb:11
+    environment: { MARIADB_ROOT_PASSWORD: secret, MARIADB_DATABASE: rekomendasi_film }
+    volumes: [mariadb_data:/var/lib/mysql]
+
+  postgres:
+    profiles: [postgres]
+    image: postgres:17
+    environment: { POSTGRES_PASSWORD: secret, POSTGRES_DB: rekomendasi_film }
+    volumes: [pg_data:/var/lib/postgresql/data]
+
+  redis:
+    profiles: [redis]
+    image: redis:7-alpine
 
 volumes:
-  db_data:
+  mysql_data:
+  mariadb_data:
+  pg_data:

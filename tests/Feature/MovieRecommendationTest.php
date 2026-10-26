@@ -156,7 +156,7 @@ class MovieRecommendationTest extends TestCase
         $receiptResponse = $this->withHeaders($headers)->getJson("/api/transactions/{$orderNumber}");
         $receiptResponse->assertStatus(200);
         $receiptResponse->assertJsonPath('data.order_number', $orderNumber);
-        $this->assertEquals('RP. 25.000', $receiptResponse->json('data.formatted_amount'));
+        $this->assertEquals('Rp 25.000', $receiptResponse->json('data.formatted_amount'));
 
         // 3. User transactions list
         $listResponse = $this->withHeaders($headers)->getJson('/api/me/transactions');

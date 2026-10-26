@@ -1,66 +1,24 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-// Redirect root
-Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('dashboard');
-    }
-    return redirect()->route('login');
-});
+// Setiap URL menampilkan view `app` dengan nama halaman; JS (resources/js/pages/{page}.js) yang mengisi konten.
+// Autentikasi memakai token Sanctum (lihat routes/api.php); akses dijaga di resources/js/main.js dan di API.
+$pages = [
+    '/'                  => ['home', 'Beranda'],
+    '/login'             => ['login', 'Masuk'],
+    '/register'          => ['register', 'Daftar'],
+    '/history'           => ['history', 'Riwayat Tonton'],
+    '/transactions'      => ['transactions', 'Transaksi'],
+    '/preferences'       => ['preferences', 'Preferensi'],
+    '/cart'              => ['cart', 'Keranjang'],
+    '/admin'             => ['admin-dashboard', 'Panel Admin'],
+    '/admin/movies'      => ['admin-movies', 'Kelola Film'],
+    '/admin/genres'      => ['admin-genres', 'Kelola Genre'],
+    '/admin/users'       => ['admin-users', 'Kelola Pengguna'],
+    '/admin/transactions' => ['admin-transactions', 'Riwayat Pembelian'],
+];
 
-// Halaman Guest
-Route::middleware('guest')->group(function () {
-    Route::get('/login', function () {
-        return view('auth.login');
-    })->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
-
-    Route::get('/register', function () {
-        return view('auth.register');
-    })->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
-});
-
-// Halaman Pengguna Terautentikasi (Web Session)
-Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-    Route::get('/dashboard', function () {
-        return view('user.dashboard');
-    })->name('dashboard');
-
-    Route::get('/history', function () {
-        return view('user.history');
-    })->name('history');
-
-    Route::get('/transactions', function () {
-        return view('user.transactions');
-    })->name('transactions');
-
-    Route::get('/preferences', function () {
-        return view('user.preferences');
-    })->name('preferences');
-
-    // Halaman Admin (Role: Admin)
-    Route::middleware('role:admin')->prefix('admin')->group(function () {
-        Route::get('/', function () {
-            return view('admin.dashboard');
-        })->name('admin.dashboard');
-
-        Route::get('/movies', function () {
-            return view('admin.movies');
-        })->name('admin.movies');
-
-        Route::get('/genres', function () {
-            return view('admin.genres');
-        })->name('admin.genres');
-
-        Route::get('/users', function () {
-            return view('admin.users');
-        })->name('admin.users');
-    });
-});
+foreach ($pages as $uri => [$page, $title]) {
+    Route::view($uri, 'app', compact('page', 'title'));
+}

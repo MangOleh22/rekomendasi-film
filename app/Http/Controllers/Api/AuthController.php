@@ -8,7 +8,6 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -29,10 +28,6 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
-
-        if (!$request->expectsJson()) {
-            Auth::login($user);
-        }
 
         return response()->json([
             'message' => 'Registrasi berhasil.',
@@ -58,8 +53,8 @@ class AuthController extends Controller
         $input = trim($credentials['username']);
 
         // Cari berdasarkan username atau email
-        $user = User::where('username', $input)
-            ->orWhere('email', $input)
+        $user = User::where('username', strtolower($input)) // username disimpan huruf kecil
+            ->orWhereRaw('LOWER(email) = ?', [strtolower($input)])
             ->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
@@ -68,10 +63,13 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        if (!$user->is_active) {
+            throw ValidationException::withMessages([
+                'username' => ['Akun Anda dinonaktifkan. Hubungi administrator.'],
+            ]);
+        }
 
-        // Login session web browser
-        Auth::login($user);
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
             'message' => 'Login berhasil.',
@@ -89,15 +87,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
-
-        if ($user) {
-            $user->tokens()->delete();
-        }
-
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->user()?->currentAccessToken()?->delete(); // hanya perangkat ini; perangkat lain tetap masuk
 
         return response()->json([
             'message' => 'Logout berhasil.',

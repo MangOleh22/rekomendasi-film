@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\Admin\GenreController as AdminGenreController;
 use App\Http\Controllers\Api\Admin\MovieController as AdminMovieController;
 use App\Http\Controllers\Api\Admin\StatsController as AdminStatsController;
+use App\Http\Controllers\Api\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\GenreController;
 use App\Http\Controllers\Api\MovieController;
 use App\Http\Controllers\Api\RecommendationController;
@@ -38,6 +40,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me/transactions', [TransactionController::class, 'index']);
     Route::get('/transactions/{identifier}', [TransactionController::class, 'show']);
 
+    // Keranjang belanja
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/checkout', [CartController::class, 'checkout']);
+    Route::post('/cart/{id}', [CartController::class, 'add']);
+    Route::delete('/cart/{id}', [CartController::class, 'remove']);
+
     // Rekomendasi
     Route::get('/recommendations', [RecommendationController::class, 'index']);
 
@@ -48,5 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('genres', AdminGenreController::class);
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::put('/users/{id}', [AdminUserController::class, 'update']);
+        Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
+        Route::get('/transactions', [AdminTransactionController::class, 'index']);
     });
 });

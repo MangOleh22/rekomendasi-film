@@ -3,72 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CartItem;
 use App\Models\Movie;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WatchHistory;
+use App\Support\AgeAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class MovieController extends Controller
 {
-    /**
-     * Evaluasi batasan usia menggunakan algoritma if-else berjenjang:
-     * - Di Bawah Umur (< 13 tahun)
-     * - Remaja (13 - 17 tahun)
-     * - Dewasa (>= 18 tahun)
-     */
     private function evaluateAgeAccess(User $user, Movie $movie): array
     {
-        $userAge = (int) $user->age;
-        $movieAgeLimit = (int) $movie->age_limit;
-
-        // 1. Klasifikasi kategori umur user dengan algoritma if-else
-        if ($userAge < 13) {
-            $userCategory = 'Di Bawah Umur';
-        } elseif ($userAge < 18) {
-            $userCategory = 'Remaja';
-        } else {
-            $userCategory = 'Dewasa';
-        }
-
-        // 2. Klasifikasi kategori umur film dengan algoritma if-else
-        if ($movieAgeLimit < 13) {
-            $movieCategory = 'Di Bawah Umur';
-        } elseif ($movieAgeLimit < 18) {
-            $movieCategory = 'Remaja';
-        } else {
-            $movieCategory = 'Dewasa';
-        }
-
-        // 3. Evaluasi hak akses dengan algoritma if-else
-        $isAllowed = false;
-        if ($userCategory === 'Dewasa') {
-            // Dewasa memiliki izin tonton untuk semua kategori
-            $isAllowed = true;
-        } elseif ($userCategory === 'Remaja') {
-            // Remaja diizinkan menonton kategori 'Remaja' dan 'Di Bawah Umur'
-            if ($movieCategory === 'Dewasa') {
-                $isAllowed = false;
-            } else {
-                $isAllowed = true;
-            }
-        } else {
-            // Pengguna di bawah umur hanya boleh menonton kategori 'Di Bawah Umur'
-            if ($movieCategory === 'Di Bawah Umur') {
-                $isAllowed = true;
-            } else {
-                $isAllowed = false;
-            }
-        }
-
-        return [
-            'is_allowed' => $isAllowed,
-            'user_category' => $userCategory,
-            'movie_category' => $movieCategory,
-            'user_age' => $userAge,
-        ];
+        return AgeAccess::evaluate($user, $movie);
     }
 
     public function index(Request $request): JsonResponse
@@ -93,7 +42,7 @@ class MovieController extends Controller
         }
 
         $movies = $query->orderBy('rating', 'desc')
-            ->paginate($request->input('per_page', 12));
+            ->paginate($this->perPage($request, 12));
 
         return response()->json($movies);
     }
@@ -112,8 +61,8 @@ class MovieController extends Controller
             ->where('is_active', true)
             ->forAge($user->age)
             ->where(function ($q) use ($term) {
-                $q->where('title', 'like', "%{$term}%")
-                  ->orWhere('synopsis', 'like', "%{$term}%");
+                $q->whereLike('title', "%{$term}%")
+                  ->orWhereLike('synopsis', "%{$term}%");
             })
             ->orderBy('rating', 'desc')
             ->take(20)
@@ -127,7 +76,7 @@ class MovieController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
-        $movie = Movie::with('genres:id,name,slug')->find($id);
+        $movie = Movie::with('genres:id,name,slug')->where('is_active', true)->find($id);
 
         if (!$movie) {
             return response()->json([
@@ -170,7 +119,7 @@ class MovieController extends Controller
     public function watch(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
-        $movie = Movie::find($id);
+        $movie = Movie::where('is_active', true)->find($id);
 
         if (!$movie) {
             return response()->json(['message' => 'Film tidak ditemukan.'], 404);
@@ -182,6 +131,13 @@ class MovieController extends Controller
             return response()->json([
                 'message' => "Tidak dapat mencatat tontonan: Akun Anda berkategori {$access['user_category']}, sedangkan film ini berkategori {$access['movie_category']}.",
             ], 403);
+        }
+
+        // Film berbayar hanya boleh ditonton setelah dibeli.
+        $owned = $movie->price <= 0 || Transaction::where('user_id', $user->id)
+            ->where('movie_id', $movie->id)->where('status', 'success')->exists();
+        if (!$owned) {
+            return response()->json(['message' => 'Film berbayar harus dibeli terlebih dahulu.'], 403);
         }
 
         $history = WatchHistory::create([
@@ -202,11 +158,13 @@ class MovieController extends Controller
     public function purchase(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
-        $movie = Movie::with('genres:id,name,slug')->find($id);
+        $movie = Movie::with('genres:id,name,slug')->where('is_active', true)->find($id);
 
         if (!$movie) {
             return response()->json(['message' => 'Film tidak ditemukan.'], 404);
         }
+
+        $request->validate(['payment_method' => ['nullable', 'in:' . implode(',', Transaction::METHODS)]]);
 
         // Validasi usia menggunakan algoritma if-else
         $access = $this->evaluateAgeAccess($user, $movie);
@@ -223,6 +181,8 @@ class MovieController extends Controller
             ->first();
 
         if ($existing) {
+            CartItem::where('user_id', $user->id)->where('movie_id', $movie->id)->delete();
+
             return response()->json([
                 'message' => 'Anda sudah memiliki film ini.',
                 'transaction' => $existing->load(['user', 'movie']),
@@ -243,6 +203,8 @@ class MovieController extends Controller
             'status' => 'success',
             'paid_at' => now(),
         ]);
+
+        CartItem::where('user_id', $user->id)->where('movie_id', $movie->id)->delete(); // sudah dibeli, tak perlu di keranjang
 
         return response()->json([
             'message' => 'Pembayaran berhasil! Struk pembelian telah diterbitkan.',

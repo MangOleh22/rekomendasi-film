@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Events\MovieChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MovieRequest;
 use App\Models\Movie;
@@ -18,14 +19,14 @@ class MovieController extends Controller
 
         if ($request->filled('q')) {
             $term = $request->q;
-            $query->where('title', 'like', "%{$term}%");
+            $query->whereLike('title', "%{$term}%"); // case-insensitive di MySQL/MariaDB/PostgreSQL
         }
 
         if ($request->filled('age_limit')) {
             $query->where('age_limit', $request->age_limit);
         }
 
-        $movies = $query->orderBy('id', 'desc')->paginate($request->input('per_page', 10));
+        $movies = $query->orderBy('id', 'desc')->paginate($this->perPage($request, 10));
 
         return response()->json($movies);
     }
@@ -45,6 +46,8 @@ class MovieController extends Controller
         if ($request->filled('genres')) {
             $movie->genres()->sync($request->input('genres'));
         }
+
+        MovieChanged::for('created', $movie);
 
         return response()->json([
             'message' => 'Film berhasil ditambahkan.',
@@ -74,9 +77,12 @@ class MovieController extends Controller
 
         $movie->update($data);
 
-        if ($request->has('genres')) {
-            $movie->genres()->sync($request->input('genres', []));
+        // `genres_sent` dikirim form admin agar daftar genre yang dikosongkan sepenuhnya tetap tersimpan.
+        if ($request->has('genres') || $request->has('genres_sent')) {
+            $movie->genres()->sync($request->input('genres') ?? []);
         }
+
+        MovieChanged::for('updated', $movie);
 
         return response()->json([
             'message' => 'Film berhasil diperbarui.',
@@ -93,6 +99,7 @@ class MovieController extends Controller
         }
 
         $movie->delete();
+        MovieChanged::for('deleted', $movie);
 
         return response()->json([
             'message' => 'Film berhasil dihapus.',

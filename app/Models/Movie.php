@@ -86,7 +86,7 @@ class Movie extends Model
         if ($price <= 0) {
             return 'Gratis';
         }
-        return 'RP. ' . number_format($price, 0, ',', '.');
+        return 'Rp ' . number_format($price, 0, ',', '.');
     }
 
     /**
