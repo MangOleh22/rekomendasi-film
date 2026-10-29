@@ -16,7 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
+        // Rute `login` tidak bernama (halaman login ditangani frontend); jangan panggil route('login').
+        $middleware->redirectGuestsTo(fn ($request) => $request->is('api/*') ? null : '/login');
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Semua /api selalu dijawab JSON (tanpa header Accept pun 401, bukan redirect ke rute login yang tidak ada => 500).
+        $exceptions->shouldRenderJsonWhen(fn ($request, $e) => $request->is('api/*') || $request->expectsJson());
     })->create();

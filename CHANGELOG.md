@@ -3,6 +3,14 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.2.3] - 2026-10-29
+
+### Diperbaiki
+- **Poster tidak muncul** (ikon gambar rusak) setelah upload: `public/storage` di server berupa folder kosong, bukan symlink,
+  sehingga `/storage/posters/...` 404. Dibuat ulang dengan `php artisan storage:link` (wajib dijalankan sekali setiap deploy/pindah server).
+- **API tanpa token** dan tanpa header `Accept: application/json` menghasilkan error 500 ("Route [login] not defined");
+  kini selalu 401 JSON (`redirectGuestsTo` + `shouldRenderJsonWhen` untuk `api/*` di `bootstrap/app.php`).
+
 ## [2.2.2] - 2026-10-26
 
 ### Ditambahkan

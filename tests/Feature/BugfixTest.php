@@ -172,4 +172,10 @@ class BugfixTest extends TestCase
 
         $this->assertSame('26 Okt 2026, 21:16 WIB', $t->fresh()->formatted_paid_at);
     }
+
+    // 11. /api tanpa token & tanpa header Accept: harus 401 JSON (bukan 500 "Route [login] not defined")
+    public function test_api_without_token_returns_401_json_even_without_accept_header(): void
+    {
+        $this->get('/api/genres')->assertStatus(401)->assertJson(['message' => 'Unauthenticated.']);
+    }
 }
