@@ -71,6 +71,6 @@ export default async function (root, user) {
   load();
 
   // Realtime: admin mengubah katalog -> beri tahu & muat ulang daftar
-  const verbs = { created: 'ditambahkan', updated: 'diperbarui', deleted: 'dihapus' };
-  listen('movies', 'movie.changed', (e) => { toast(`Film "${e.title}" ${verbs[e.action] || 'berubah'}.`); load(); });
+  const verbs = { created: 'Ada film baru di katalog.', updated: 'Katalog film diperbarui.', deleted: 'Sebuah film dihapus dari katalog.' };
+  listen('movies', 'movie.changed', (e) => { toast(verbs[e.action] || 'Katalog film berubah.'); load(); });
 }

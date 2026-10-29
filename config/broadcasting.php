@@ -15,7 +15,22 @@ return [
     |
     */
 
-    'default' => env('BROADCAST_CONNECTION', 'null'),
+    // Kunci kosong membuat Laravel error di SETIAP request (routes/channels.php memanggil broadcaster saat boot),
+    // jadi driver pusher/reverb yang belum lengkap kuncinya otomatis jatuh ke "null" (siaran dimatikan, aplikasi tetap jalan).
+    'default' => (function () {
+        $driver = env('BROADCAST_CONNECTION') ?: 'null'; // string "null" di .env dibaca env() sebagai PHP null
+        $required = [
+            'pusher' => ['PUSHER_APP_ID', 'PUSHER_APP_KEY', 'PUSHER_APP_SECRET', 'PUSHER_APP_CLUSTER'],
+            'reverb' => ['REVERB_APP_ID', 'REVERB_APP_KEY', 'REVERB_APP_SECRET', 'REVERB_HOST'],
+        ];
+        foreach ($required[$driver] ?? [] as $name) {
+            if (! filled(env($name))) {
+                return 'null';
+            }
+        }
+
+        return $driver;
+    })(),
 
     /*
     |--------------------------------------------------------------------------
@@ -60,7 +75,9 @@ return [
                 'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
             ],
             'client_options' => [
-                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+                // Siaran sinkron (ShouldBroadcastNow): batasi tunggu agar gangguan Pusher tidak membuat simpan admin macet 30 dtk.
+                'connect_timeout' => 3,
+                'timeout' => 3,
             ],
         ],
 

@@ -3,6 +3,25 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.3.0] - 2026-10-29
+
+### Ditambahkan
+- **Realtime lewat Pusher** (cocok untuk hosting biasa tanpa proses permanen). Isi `PUSHER_APP_ID/KEY/SECRET/CLUSTER` di `.env`,
+  set `BROADCAST_CONNECTION=pusher`, lalu `npm run build` (klien memakai `VITE_PUSHER_APP_KEY` + `VITE_PUSHER_APP_CLUSTER`).
+  Reverb tetap didukung (VPS/lokal). Contoh ada di `.env.example`.
+
+### Keamanan & ketahanan
+- Payload siaran `movie.changed` kini hanya `action` + `id`; **judul film tidak lagi disiarkan** di channel publik
+  (sebelumnya judul film nonaktif/dibatasi umur bisa terlihat oleh semua pengunjung). Notifikasi di beranda jadi umum.
+- Driver `pusher`/`reverb` dengan kunci belum lengkap otomatis jatuh ke `null` (sebelumnya **error di setiap request**
+  karena `routes/channels.php` memanggil broadcaster saat boot).
+- Timeout klien Pusher 3 detik (bawaan 30 detik) agar gangguan Pusher tidak membuat simpan admin macet; gagal siaran hanya dicatat.
+- `PUSHER_APP_SECRET` hanya di server; hanya kunci publik yang masuk bundel (`VITE_*`).
+
+### Diperbaiki
+- `phpunit.xml`: `BROADCAST_CONNECTION=null` (tes tak mengirim siaran sungguhan) dan `APP_TIMEZONE=UTC`
+  (tes zona waktu struk sebelumnya gagal bila `.env` memakai `Asia/Jakarta`).
+
 ## [2.2.3] - 2026-10-29
 
 ### Diperbaiki
