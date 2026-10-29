@@ -17,3 +17,8 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Khusus lokal/server
+.env.backup*
+/public/error_log
+AGENTS.md
