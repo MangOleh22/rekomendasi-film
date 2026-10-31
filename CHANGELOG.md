@@ -3,6 +3,18 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.4.1] - 2026-10-31
+
+### Keamanan
+- **Login dan registrasi dibatasi** (10 percobaan/menit per username+IP untuk login, per IP untuk registrasi; sisanya 429) agar kata sandi tidak bisa ditebak massal.
+- **Token Sanctum kedaluwarsa** setelah 30 hari (`SANCTUM_EXPIRATION`, menit). Sebelumnya berlaku selamanya.
+- Header keamanan di `public/.htaccess`: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security`, `Permissions-Policy`.
+- `symfony/mime` 7.4.19 -> 7.4.22 (CVE-2026-45070). Laravel 11 tetap; celah di `laravel/framework` hanya ditambal di Laravel 12+ (lihat catatan upgrade).
+
+### Diperbaiki
+- Parameter query berbentuk array (`?q[]=x`, `?genre[]=x`, `?method[]=y`) menyebabkan error 500 di pencarian/katalog/admin; kini diabaikan dengan aman.
+- Tes baru: `tests/Feature/SecurityHardeningTest.php`.
+
 ## [2.4.0] - 2026-10-31
 
 ### Ditambahkan

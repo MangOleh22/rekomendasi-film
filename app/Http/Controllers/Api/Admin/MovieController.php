@@ -18,7 +18,7 @@ class MovieController extends Controller
         $query = Movie::with('genres:id,name,slug');
 
         if ($request->filled('q')) {
-            $term = $request->q;
+            $term = $request->string('q')->toString();
             $query->whereLike('title', "%{$term}%"); // case-insensitive di MySQL/MariaDB/PostgreSQL
         }
 

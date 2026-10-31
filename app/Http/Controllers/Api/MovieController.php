@@ -35,7 +35,7 @@ class MovieController extends Controller
         }
 
         if ($request->filled('genre')) {
-            $genreSlug = $request->genre;
+            $genreSlug = $request->string('genre')->toString();
             $query->whereHas('genres', function ($q) use ($genreSlug) {
                 $q->where('slug', $genreSlug)->orWhere('genres.id', $genreSlug);
             });
@@ -50,7 +50,7 @@ class MovieController extends Controller
     public function search(Request $request): JsonResponse
     {
         $user = $request->user();
-        $term = trim($request->input('q', ''));
+        $term = trim($request->string('q')->toString());
 
         if ($term === '') {
             return response()->json(['data' => []]);

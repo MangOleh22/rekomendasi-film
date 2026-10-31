@@ -15,7 +15,7 @@ class TransactionController extends Controller
         $query = Transaction::with(['user:id,username,name', 'movie:id,title,age_limit']);
 
         if ($request->filled('q')) {
-            $term = '%' . $request->q . '%';
+            $term = '%' . $request->string('q')->toString() . '%';
             $query->where(function ($q) use ($term) {
                 $q->whereLike('order_number', $term)
                     ->orWhereLike('invoice_number', $term)
@@ -24,7 +24,7 @@ class TransactionController extends Controller
             });
         }
         if ($request->filled('method')) {
-            $query->where('payment_method', $request->method);
+            $query->where('payment_method', $request->string('method')->toString());
         }
 
         $revenue = (int) (clone $query)->where('status', 'success')->sum('amount');

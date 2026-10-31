@@ -50,7 +50,7 @@ return [
     |
     */
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_EXPIRATION', 43200), // menit (30 hari); token lama berhenti berlaku setelahnya
 
     /*
     |--------------------------------------------------------------------------
