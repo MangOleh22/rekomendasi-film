@@ -17,6 +17,7 @@ const form = (m, genres) => `
       ${field('Klasifikasi usia', `<select name="age_limit" class="${select}">${AGES.map(([v, t]) => `<option value="${v}" ${Number(m?.age_limit ?? 0) === v ? 'selected' : ''}>${t}</option>`).join('')}</select>`)}
     </div>
     ${field('Genre', `<div class="flex flex-wrap gap-2">${genres.map((g) => chip('genres[]', g.id, g.name, m?.genres.some((x) => x.id === g.id))).join('')}</div>`)}
+    ${field('Trailer (tautan YouTube/Vimeo, opsional)', `<input name="trailer_url" type="url" class="${input}" placeholder="https://www.youtube.com/watch?v=..." value="${esc(m?.trailer_url)}">`)}
     ${field('Poster (ukuran bebas)', `<input name="poster" type="file" accept="image/*" class="${input} pt-1.5">`)}
     <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" class="size-4 accent-[var(--primary)]" ${m?.is_active !== false ? 'checked' : ''}> Tampilkan di katalog</label>
     <button class="${btn()}">Simpan</button>

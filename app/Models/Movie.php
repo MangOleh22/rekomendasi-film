@@ -22,6 +22,7 @@ class Movie extends Model
         'price',
         'age_limit',
         'poster_path',
+        'trailer_url',
         'is_active',
     ];
 
@@ -36,7 +37,7 @@ class Movie extends Model
         ];
     }
 
-    protected $appends = ['age_label', 'age_category', 'formatted_price'];
+    protected $appends = ['age_label', 'age_category', 'formatted_price', 'trailer_embed_url'];
 
     protected static function booted(): void
     {
@@ -87,6 +88,32 @@ class Movie extends Model
             return 'Gratis';
         }
         return 'Rp ' . number_format($price, 0, ',', '.');
+    }
+
+    /**
+     * Ubah tautan YouTube/Vimeo menjadi URL embed; null bila kosong atau bukan situs yang didukung.
+     */
+    public static function embedUrl(?string $url): ?string
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('~^https?://(?:www\.|m\.)?(?:youtube\.com/(?:watch\?(?:[^#]*&)?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])~i', $url, $m)) {
+            return 'https://www.youtube-nocookie.com/embed/' . $m[1];
+        }
+
+        if (preg_match('~^https?://(?:www\.)?vimeo\.com/(?:video/)?(\d+)(?!\d)~i', $url, $m)) {
+            return 'https://player.vimeo.com/video/' . $m[1];
+        }
+
+        return null;
+    }
+
+    public function getTrailerEmbedUrlAttribute(): ?string
+    {
+        return self::embedUrl($this->trailer_url);
     }
 
     /**

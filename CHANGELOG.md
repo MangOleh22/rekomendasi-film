@@ -3,6 +3,15 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.4.0] - 2026-10-31
+
+### Ditambahkan
+- **Trailer film**: admin mengisi tautan YouTube/Vimeo (opsional) di form Tambah/Ubah film; trailer tampil sebagai pemutar
+  di dialog detail film pada halaman pengguna. Kolom baru `movies.trailer_url` (**jalankan `php artisan migrate`**).
+- Server mengubah tautan menjadi URL embed (`trailer_embed_url`; YouTube memakai `youtube-nocookie`) dan menolak
+  situs lain (422) agar iframe tidak bisa diarahkan ke alamat sembarang.
+- Tes baru: `tests/Feature/TrailerTest.php`.
+
 ## [2.3.0] - 2026-10-29
 
 ### Ditambahkan

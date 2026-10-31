@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Movie;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MovieRequest extends FormRequest
@@ -13,6 +14,10 @@ class MovieRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->has('trailer_url')) {
+            $this->merge(['trailer_url' => trim((string) $this->input('trailer_url')) ?: null]);
+        }
+
         if ($this->has('price')) {
             $cleaned = preg_replace('/[^0-9]/', '', (string) $this->input('price'));
             $this->merge([
@@ -31,6 +36,11 @@ class MovieRequest extends FormRequest
             'price' => ['nullable', 'integer', 'min:0'],
             'age_limit' => ['required', 'integer', 'in:0,13,17,21'],
             'poster' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,gif,avif,svg'], // tanpa batas ukuran aplikasi; batas server = upload_max_filesize/post_max_size (php.ini)
+            'trailer_url' => ['nullable', 'string', 'max:500', function ($attr, $value, $fail) {
+                if ($value !== null && Movie::embedUrl($value) === null) {
+                    $fail('Trailer harus berupa tautan YouTube atau Vimeo yang valid.');
+                }
+            }],
             'genres' => ['nullable', 'array'],
             'genres.*' => ['integer', 'exists:genres,id'],
             'is_active' => ['nullable', 'boolean'],

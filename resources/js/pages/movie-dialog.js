@@ -8,6 +8,9 @@ const detail = (m) => `
   <div class="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
     ${ageBadge(m)}<span class="flex items-center gap-1 text-amber-500">${icon('star', 'size-3.5 fill-current')}${Number(m.rating).toFixed(1)}</span><span>${m.year}</span>
   </div>
+  ${m.trailer_embed_url ? `<div class="mb-4 aspect-video overflow-hidden rounded-lg bg-black">
+    <iframe src="${esc(m.trailer_embed_url)}" title="Trailer ${esc(m.title)}" class="size-full" loading="lazy" allowfullscreen
+      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
   <div class="grid gap-4 sm:grid-cols-[180px_1fr]">
     <div class="mx-auto aspect-[2/3] w-40 overflow-hidden rounded-lg sm:w-full">${poster(m)}</div>
     <div class="grid content-start gap-3">
