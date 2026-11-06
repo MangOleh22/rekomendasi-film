@@ -19,6 +19,19 @@ async function request(method, url, body) {
   return data;
 }
 
+// Unduh file (mis. CSV) dari endpoint ber-token lalu simpan di perangkat.
+export async function download(url, fallbackName = 'unduhan') {
+  const res = await fetch(`/api${url}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'Gagal mengunduh file.');
+  }
+  const name = res.headers.get('Content-Disposition')?.match(/filename="?([^";]+)"?/)?.[1] || fallbackName;
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await res.blob()), download: name });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 export const api = {
   get: (url, params = {}) => {
     const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null));

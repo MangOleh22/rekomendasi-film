@@ -58,5 +58,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/users/{id}', [AdminUserController::class, 'update']);
         Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
         Route::get('/transactions', [AdminTransactionController::class, 'index']);
+        Route::get('/export/ml', [\App\Http\Controllers\Api\Admin\ExportController::class, 'ml']);
     });
 });

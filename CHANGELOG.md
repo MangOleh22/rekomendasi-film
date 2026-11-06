@@ -3,6 +3,11 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.5.0] - 2026-11-06
+
+### Ditambahkan
+- **Ekspor dataset CSV untuk machine learning** di Panel Admin (`GET /api/admin/export/ml?genre=thriller`). Satu baris per pengguna yang pernah menonton film bergenre terpilih (default Thriller): usia, kategori usia, rating minimum, total tontonan, jumlah & rasio tontonan genre target, genre favorit (kolom `fav_<slug>` 0/1) dan jumlah tontonan per genre (`watch_<slug>`). Data dianonimkan (tanpa nama/email). Tes: `MlExportTest`.
+
 ## [2.4.1] - 2026-10-31
 
 ### Keamanan

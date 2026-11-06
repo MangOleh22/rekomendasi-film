@@ -3,7 +3,7 @@
 //  - /build/* (aset)   : cache-first (nama file ber-hash, aman di-cache lama)
 //  - navigasi halaman  : network-first, jatuh ke shell SPA ter-cache lalu offline.html
 // Naikkan VERSION untuk membersihkan cache lama.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `rekomfilm-${VERSION}`;
 const PRECACHE = ['/offline.html', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
