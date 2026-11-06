@@ -1,5 +1,5 @@
 import { api, download } from '../lib/api';
-import { btn, card, esc, icon, on, rupiah, select, toast } from '../lib/ui';
+import { badge, btn, card, icon, on, rupiah, toast } from '../lib/ui';
 import { adminHeader } from './admin-nav';
 
 const STATS = [
@@ -7,26 +7,36 @@ const STATS = [
   ['total_watched', 'Total Tontonan', 'eye'], ['total_transactions', 'Total Transaksi', 'receipt'], ['total_revenue', 'Total Pendapatan', 'card', rupiah],
 ];
 
+const COLUMNS = ['user_id', 'age', 'age_category', 'minimum_rating', 'total_watch', 'top_genre', 'fav_<genre>', 'watch_<genre>', 'favorite_genres'];
+
 export default async function (root) {
-  const [{ data }, genres] = await Promise.all([api.get('/admin/stats'), api.get('/genres')]);
-  const list = genres.data || genres;
+  const [{ data }, { data: ml }] = await Promise.all([api.get('/admin/stats'), api.get('/admin/export/ml/summary')]);
   root.innerHTML = adminHeader('Panel Admin') + `<div class="grid grid-cols-2 gap-4 lg:grid-cols-3">${STATS.map(([k, text, ic, fmt]) => `
     <div class="${card} grid gap-2 p-5"><div class="flex items-center justify-between text-sm text-muted-foreground">${text}${icon(ic)}</div>
       <p class="text-3xl font-semibold">${fmt ? fmt(data[k]) : data[k]}</p></div>`).join('')}</div>
-    <div class="${card} mt-6 grid gap-3 p-5">
-      <div><h2 class="font-semibold">Dataset Machine Learning (CSV)</h2>
-        <p class="text-sm text-muted-foreground">Pengguna yang pernah menonton film bergenre terpilih beserta genre favorit, usia, dan jumlah tontonan per genre. Data dianonimkan.</p></div>
-      <div class="flex flex-wrap gap-2">
-        <select data-ml-genre class="${select} w-auto">${list.map((g) => `<option value="${esc(g.slug)}" ${g.slug === 'thriller' ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select>
-        <button data-ml-export class="${btn()}">${icon('download')} Unduh CSV</button>
-      </div></div>`;
+
+    <section class="${card} mt-6 overflow-hidden">
+      <div class="flex flex-col gap-5 bg-gradient-to-br from-primary/15 via-transparent to-transparent p-6 sm:flex-row sm:items-center">
+        <div class="grid size-14 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">${icon('sparkles', 'size-7')}</div>
+        <div class="grid flex-1 gap-1">
+          <h2 class="text-lg font-semibold">Dataset Machine Learning</h2>
+          <p class="text-sm text-muted-foreground">Preferensi tontonan semua pengguna untuk semua genre dalam satu file CSV: usia, genre favorit, jumlah tontonan per genre, dan genre yang paling sering ditonton. Data dianonimkan dan siap dibuka di Excel, Google Sheets, atau Python (pandas).</p>
+        </div>
+        <button data-ml-export class="${btn()} sm:self-center">${icon('download')} Unduh CSV</button>
+      </div>
+      <div class="grid gap-4 border-t p-6 sm:grid-cols-3">
+        <div><p class="text-2xl font-semibold">${ml.rows}</p><p class="text-xs text-muted-foreground">Baris (pengguna dengan riwayat tonton)</p></div>
+        <div><p class="text-2xl font-semibold">${ml.genres}</p><p class="text-xs text-muted-foreground">Genre dalam dataset</p></div>
+        <div><p class="text-2xl font-semibold">${6 + ml.genres * 2 + 1}</p><p class="text-xs text-muted-foreground">Kolom fitur</p></div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 border-t p-6 pt-4">${COLUMNS.map((c) => badge(c, 'outline')).join('')}</div>
+    </section>`;
 
   on(root, 'click', '[data-ml-export]', async (e, el) => {
     el.disabled = true;
     try {
-      const genre = root.querySelector('[data-ml-genre]').value;
-      await download(`/admin/export/ml?genre=${encodeURIComponent(genre)}`, `dataset-ml-${genre}.csv`);
-      toast('CSV berhasil diunduh.');
+      await download('/admin/export/ml', 'dataset-ml-rekomfilm.csv');
+      toast('Dataset CSV berhasil diunduh.');
     } catch (err) { toast(err.message, 'error'); } finally { el.disabled = false; }
   });
 }

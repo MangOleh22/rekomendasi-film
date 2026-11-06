@@ -3,6 +3,15 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.5.1] - 2026-11-06
+
+### Diubah
+- Ekspor dataset ML kini **semua genre dalam satu file** (tanpa pilihan genre): baris = pengguna dengan riwayat tonton, kolom baru `top_genre`; file diberi BOM UTF-8 agar rapi di Excel. Endpoint ringkasan `GET /api/admin/export/ml/summary`.
+- Kartu unduh di Panel Admin didesain ulang (jumlah baris/genre/kolom + daftar kolom).
+
+### Diperbaiki
+- Dropdown (`<select>`) tidak terbaca di mode gelap: `color-scheme: dark` pada `.dark`.
+
 ## [2.5.0] - 2026-11-06
 
 ### Ditambahkan
