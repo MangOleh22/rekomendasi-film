@@ -52,11 +52,33 @@ class MlExportTest extends TestCase
             ->assertOk()->assertJsonPath('data.genres', Genre::count());
     }
 
+    public function test_admin_downloads_valid_xlsx(): void
+    {
+        $this->seed();
+        $movie = Movie::first();
+        $user = User::factory()->create();
+        WatchHistory::create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => now()]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $res = $this->withToken($admin->createToken('t')->plainTextToken)->get('/api/admin/export/ml/xlsx')->assertOk();
+        $this->assertStringContainsString('spreadsheetml', $res->headers->get('Content-Type'));
+
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($res->getFile()->getPathname()) === true);
+        $sheet = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+        $this->assertNotFalse(simplexml_load_string($sheet)); // XML sah
+        $this->assertStringContainsString('<t>user_id</t>', $sheet);
+        $this->assertStringContainsString('state="frozen"', $sheet);
+        $this->assertSame('AA', \App\Support\SimpleXlsx::col(26));
+    }
+
     public function test_non_admin_forbidden(): void
     {
         $this->seed();
         $user = User::factory()->create();
         $this->withToken($user->createToken('t')->plainTextToken)->getJson('/api/admin/export/ml')->assertForbidden();
         $this->withToken($user->createToken('t')->plainTextToken)->getJson('/api/admin/export/ml/summary')->assertForbidden();
+        $this->withToken($user->createToken('t')->plainTextToken)->getJson('/api/admin/export/ml/xlsx')->assertForbidden();
     }
 }

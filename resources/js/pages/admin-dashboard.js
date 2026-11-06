@@ -20,9 +20,12 @@ export default async function (root) {
         <div class="grid size-14 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">${icon('sparkles', 'size-7')}</div>
         <div class="grid flex-1 gap-1">
           <h2 class="text-lg font-semibold">Dataset Machine Learning</h2>
-          <p class="text-sm text-muted-foreground">Preferensi tontonan semua pengguna untuk semua genre dalam satu file CSV: usia, genre favorit, jumlah tontonan per genre, dan genre yang paling sering ditonton. Data dianonimkan dan siap dibuka di Excel, Google Sheets, atau Python (pandas).</p>
+          <p class="text-sm text-muted-foreground">Preferensi tontonan semua pengguna untuk semua genre dalam satu file: usia, genre favorit, jumlah tontonan per genre, dan genre yang paling sering ditonton. Data dianonimkan. Pilih <b>Excel</b> untuk tabel rapi, atau <b>CSV</b> untuk Python (pandas).</p>
         </div>
-        <button data-ml-export class="${btn()} sm:self-center">${icon('download')} Unduh CSV</button>
+        <div class="flex flex-wrap gap-2 sm:self-center">
+          <button data-ml-export="xlsx" class="${btn()}">${icon('download')} Unduh Excel</button>
+          <button data-ml-export="csv" class="${btn('outline')}">${icon('download')} CSV (Python)</button>
+        </div>
       </div>
       <div class="grid gap-4 border-t p-6 sm:grid-cols-3">
         <div><p class="text-2xl font-semibold">${ml.rows}</p><p class="text-xs text-muted-foreground">Baris (pengguna dengan riwayat tonton)</p></div>
@@ -35,8 +38,9 @@ export default async function (root) {
   on(root, 'click', '[data-ml-export]', async (e, el) => {
     el.disabled = true;
     try {
-      await download('/admin/export/ml', 'dataset-ml-rekomfilm.csv');
-      toast('Dataset CSV berhasil diunduh.');
+      const xlsx = el.dataset.mlExport === 'xlsx';
+      await download(xlsx ? '/admin/export/ml/xlsx' : '/admin/export/ml', `dataset-ml-rekomfilm.${xlsx ? 'xlsx' : 'csv'}`);
+      toast(`Dataset ${xlsx ? 'Excel' : 'CSV'} berhasil diunduh.`);
     } catch (err) { toast(err.message, 'error'); } finally { el.disabled = false; }
   });
 }

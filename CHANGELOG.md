@@ -3,6 +3,14 @@
 Semua perubahan penting pada RekomFilm dicatat di sini (terbaru di atas).
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id-ID/1.1.0/).
 
+## [2.5.2] - 2026-11-06
+
+### Ditambahkan
+- **Unduh dataset ML sebagai Excel (.xlsx)** (`GET /api/admin/export/ml/xlsx`): header tebal berwarna, lebar kolom otomatis, baris header terkunci, dan filter. Dibuat tanpa library tambahan (`App\Support\SimpleXlsx`, cukup ext-zip).
+
+### Diperbaiki
+- CSV tampil satu kolom di Excel berlokal Indonesia (pemisah `;`). Untuk Excel kini dipakai file .xlsx; CSV tetap berformat koma untuk Python/pandas.
+
 ## [2.5.1] - 2026-11-06
 
 ### Diubah
